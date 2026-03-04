@@ -1,0 +1,20 @@
+# Step 1: Use Node 20 alpine image
+FROM node:24-alpine
+
+# Step 2: Set working directory inside container
+WORKDIR /app
+
+# Step 3: Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Step 4: Install dependencies
+RUN npm install
+
+# Step 5: Copy all source code
+COPY . .
+
+# Step 6: Expose frontend port
+EXPOSE 3000
+
+# Step 7: Run Vite dev server, accessible from outside Docker
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
