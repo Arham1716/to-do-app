@@ -17,6 +17,6 @@ jobs:
       - name: Deploy application
         run: |
           cd /home/abdullah/to-do-app
-          docker-compose down
-          docker-compose build
-          docker-compose up -d --remove-orphans
+          docker compose down
+          docker compose build
+          docker compose up -d --remove-orphans
