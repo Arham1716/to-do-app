@@ -150,19 +150,19 @@ jobs:
 
   # --- Optional: Deploy to VM via SSH ---
   # Uncomment and add secrets (VM_HOST, VM_USER, VM_SSH_KEY) to use
-  # deploy:
-  #   name: Deploy to VM
-  #   runs-on: ubuntu-latest
-  #   needs: [docker-push]
-  #   if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-  #   steps:
-  #     - name: Deploy via SSH
-  #       uses: appleboy/ssh-action@v1.0.3
-  #       with:
-  #         host: ${{ secrets.VM_HOST }}
-  #         username: ${{ secrets.VM_USER }}
-  #         key: ${{ secrets.VM_SSH_KEY }}
-  #         script: |
-  #           cd /path/to/project
-  #           docker compose pull
-  #           docker compose up -d
+  deploy:
+    name: Deploy to VM
+    runs-on: ubuntu-latest
+    needs: [docker-push]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 172.28.5.11
+          username: abdullah
+          password: abdullah
+          script: |
+            cd ~/to-do-app
+            docker compose pull
+            docker compose up -d
