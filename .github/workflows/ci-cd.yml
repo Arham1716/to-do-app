@@ -2,167 +2,91 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
   pull_request:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: ghcr.io # Change to docker.io if using Docker Hub
+  IMAGE_FRONTEND: ${{ env.REGISTRY }}/${{ github.repository }}/frontend
+  IMAGE_BACKEND: ${{ env.REGISTRY }}/${{ github.repository }}/backend
+  TAG: ${{ github.sha }}
 
 jobs:
-  # --- CI: Lint, test, and build backend and frontend ---
-  backend:
-    name: Backend
+  # -------------------
+  # Stage 1: Build
+  # -------------------
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: backend
-        run: npm ci
-
-      - name: Lint
-        working-directory: backend
-        run: npm run lint
-
-      - name: Test
-        working-directory: backend
-        run: npm test
-        env:
-          DB_HOST: localhost
-          DB_USERNAME: user
-          DB_PASSWORD: password
-          DB_NAME: todo_test
-
-      - name: Build
-        working-directory: backend
-        run: npm run build
-
-  frontend:
-    name: Frontend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Lint
-        working-directory: frontend
-        run: npm run lint
-
-      - name: Build
-        working-directory: frontend
-        run: npm run build
-
-  # --- Docker: Verify images build ---
-  docker-build:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: [backend, frontend]
-    steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: false
-          tags: todo-backend:test
-
       - name: Build frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          push: false
-          tags: todo-frontend:test
+        run: docker build -t $IMAGE_FRONTEND:$TAG ./frontend
 
-  # --- CD: Build, push to registry, and optionally deploy (only on main/master) ---
-  docker-push:
-    name: Docker Push
+      - name: Build backend image
+        run: docker build -t $IMAGE_BACKEND:$TAG ./backend
+
+  # -------------------
+  # Stage 2: Test
+  # -------------------
+  test:
     runs-on: ubuntu-latest
-    needs: [docker-build]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    permissions:
-      contents: read
-      packages: write
+    needs: build
     steps:
-      - uses: actions/checkout@v4
+      - name: Run frontend tests
+        run: docker run --rm $IMAGE_FRONTEND:$TAG npm test
 
-      - name: Log in to Container Registry
+      - name: Run backend tests
+        run: docker run --rm $IMAGE_BACKEND:$TAG npm test
+
+  # -------------------
+  # Stage 3: Push Docker Images
+  # -------------------
+  push:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (backend)
-        id: meta-backend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/todo-backend
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+      - name: Push frontend image
+        run: docker push $IMAGE_FRONTEND:$TAG
 
-      - name: Build and push backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+      - name: Push backend image
+        run: docker push $IMAGE_BACKEND:$TAG
 
-      - name: Extract metadata (frontend)
-        id: meta-frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/todo-frontend
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
-
-      - name: Build and push frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-
-  # --- Optional: Deploy to VM via SSH ---
-  # Uncomment and add secrets (VM_HOST, VM_USER, VM_SSH_KEY) to use
+  # -------------------
+  # Stage 4: Deploy to Server
+  # -------------------
   deploy:
-    name: Deploy to VM
     runs-on: ubuntu-latest
-    needs: [docker-push]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: push
     steps:
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 172.28.5.11
-          username: abdullah
-          password: abdullah
-          script: |
-            cd ~/to-do-app
-            docker compose pull
-            docker compose up -d
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            cd /home/abdullah/to-do-app &&
+            docker-compose pull &&
+            docker-compose up -d --remove-orphans
+          "
