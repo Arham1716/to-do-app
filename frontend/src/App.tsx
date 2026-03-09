@@ -12,19 +12,19 @@ function App() {
 
   const API_URL = "/todos"; // backend URL
 
-  // Fetch todos from backend
-  const fetchTodos = async () => {
-    try {
-      const res = await fetch(API_URL);
-      const data: Todo[] = await res.json();
-      setTodos(data);
-    } catch (err) {
-      console.error("Failed to fetch todos:", err);
-    }
-  };
-
+  // Fetch todos from backend safely
   useEffect(() => {
-    fetchTodos();
+    const fetchData = async () => {
+      try {
+        const res = await fetch(API_URL);
+        const data: Todo[] = await res.json();
+        setTodos(data);
+      } catch (err) {
+        console.error("Failed to fetch todos:", err);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Add a new todo
