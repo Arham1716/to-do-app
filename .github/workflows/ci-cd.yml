@@ -87,8 +87,6 @@ jobs:
           context: ./backend
           push: false
           tags: todo-backend:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Build frontend image
         uses: docker/build-push-action@v6
@@ -96,8 +94,6 @@ jobs:
           context: ./frontend
           push: false
           tags: todo-frontend:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   # --- CD: Build, push to registry, and optionally deploy (only on main/master) ---
   docker-push:
@@ -134,8 +130,6 @@ jobs:
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Extract metadata (frontend)
         id: meta-frontend
@@ -153,8 +147,6 @@ jobs:
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   # --- Optional: Deploy to VM via SSH ---
   # Uncomment and add secrets (VM_HOST, VM_USER, VM_SSH_KEY) to use
