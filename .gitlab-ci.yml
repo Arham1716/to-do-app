@@ -1,17 +1,54 @@
-# .gitlab-ci.yml
 stages:
+  - build
   - deploy
 
+variables:
+  DEPLOY_PATH: "/home/messam/to-do-app"
+  DEPLOY_SERVER: "messam@172.28.5.10"
+  IMAGE_NAME_BACKEND: "ghcr.io/your-username/todo-backend"
+  IMAGE_NAME_FRONTEND: "ghcr.io/your-username/todo-frontend"
+
+# Step 1: Build Docker images and push to registry
+build:
+  stage: build
+  tags:
+    - self-hosted
+  script:
+    # Docker login to GHCR
+    - echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+
+    # Backend
+    - echo "Building backend image..."
+    - docker build -t $IMAGE_NAME_BACKEND:$CI_COMMIT_SHA ./backend
+    - docker tag $IMAGE_NAME_BACKEND:$CI_COMMIT_SHA $IMAGE_NAME_BACKEND:latest
+    - docker push $IMAGE_NAME_BACKEND:$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME_BACKEND:latest
+
+    # Frontend
+    - echo "Building frontend image..."
+    - docker build -t $IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA ./frontend
+    - docker tag $IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA $IMAGE_NAME_FRONTEND:latest
+    - docker push $IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME_FRONTEND:latest
+  only:
+    - main
+    - master
+
+# Step 2: Deploy on Messam's VM
 deploy:
   stage: deploy
   tags:
-    - self-hosted # optional: only if your runner has this tag
+    - self-hosted
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
   script:
-    - echo "Deploying application..."
-    - cd /home/abdullah/to-do-app
-    - docker compose down
-    - docker compose build
-    - docker compose up -d --remove-orphans
+    - ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_ed25519 $DEPLOY_SERVER "
+      cd $DEPLOY_PATH &&
+      docker compose pull &&
+      docker compose up -d --remove-orphans
+      "
   only:
     - main
     - master
