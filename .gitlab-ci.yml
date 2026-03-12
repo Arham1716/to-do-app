@@ -5,8 +5,8 @@ stages:
 variables:
   DEPLOY_PATH: "/home/messam/to-do-app"
   DEPLOY_SERVER: "messam@172.28.5.10"
-  IMAGE_NAME_BACKEND: "ghcr.io/your-username/todo-backend"
-  IMAGE_NAME_FRONTEND: "ghcr.io/your-username/todo-frontend"
+  IMAGE_NAME_BACKEND: "ghcr.io/arham1716/todo-backend"
+  IMAGE_NAME_FRONTEND: "ghcr.io/arham1716/todo-frontend"
 
 # Step 1: Build Docker images and push to registry
 build:
