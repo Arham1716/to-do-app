@@ -17,7 +17,6 @@ build:
     # Docker login to GHCR
     - echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
 
-    # Backend
     - echo "Building backend image..."
     - docker build -t $IMAGE_NAME_BACKEND:$CI_COMMIT_SHA ./backend
     - docker tag $IMAGE_NAME_BACKEND:$CI_COMMIT_SHA $IMAGE_NAME_BACKEND:latest
