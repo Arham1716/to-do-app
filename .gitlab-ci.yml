@@ -44,7 +44,8 @@ deploy:
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519
   script:
-    - ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_ed25519 $DEPLOY_SERVER "
+    - scp docker-compose.yml $DEPLOY_SERVER:$DEPLOY_PATH
+    - ssh -i ~/.ssh/id_ed25519 $DEPLOY_SERVER "
       cd $DEPLOY_PATH &&
       docker compose pull &&
       docker compose up -d --remove-orphans
