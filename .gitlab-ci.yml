@@ -40,7 +40,9 @@ deploy:
     - self-hosted
   script:
     - scp -o StrictHostKeyChecking=no docker-compose.yml $DEPLOY_SERVER:$DEPLOY_PATH
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 $DEPLOY_SERVER "
+    - |
+      ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 $DEPLOY_SERVER "
+      echo $REGISTRY_TOKEN | docker login ghcr.io -u $REGISTRY_USER --password-stdin &&
       cd $DEPLOY_PATH &&
       docker compose pull &&
       docker compose up -d --remove-orphans

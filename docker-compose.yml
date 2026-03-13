@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend
+    image: ghcr.io/arham1716/todo-backend:latest
     container_name: todo-backend
     restart: unless-stopped
     ports:
@@ -11,7 +11,6 @@ services:
       DB_USERNAME: user
       DB_PASSWORD: password
       DB_NAME: todo
-      # Allow frontend origin when accessed via VM IP (e.g. http://192.168.1.100:3000). Use "*" to allow any.
       CORS_ORIGIN: "*"
     depends_on:
       - db
@@ -19,7 +18,7 @@ services:
       - todo-network
 
   frontend:
-    build: ./frontend
+    image: ghcr.io/arham1716/todo-frontend:latest
     container_name: todo-frontend
     restart: unless-stopped
     ports:
@@ -39,7 +38,6 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: todo
-    # Expose 5432 only if you need to connect from host (e.g. psql). For production, remove to keep DB internal.
     ports:
       - "5432:5432"
     volumes:
