@@ -1,10 +1,22 @@
 services:
+  nginx:
+    image: nginx:latest
+    container_name: todo-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - todo-network
+
   backend:
     image: ghcr.io/arham1716/todo-backend:latest
     container_name: todo-backend
     restart: unless-stopped
-    ports:
-      - "3001:3001"
     environment:
       DB_HOST: db
       DB_PORT: 5432
@@ -21,10 +33,6 @@ services:
     image: ghcr.io/arham1716/todo-frontend:latest
     container_name: todo-frontend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      VITE_PROXY_TARGET: http://backend:3001
     depends_on:
       - backend
     networks:
@@ -38,8 +46,6 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: todo
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:

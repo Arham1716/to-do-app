@@ -10,7 +10,7 @@ function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
 
-  const API_URL = "/todos"; // backend URL
+  const API_URL = "/api/todos"; // backend URL
 
   // Fetch todos from backend safely
   useEffect(() => {
