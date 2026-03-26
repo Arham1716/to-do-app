@@ -3,8 +3,8 @@ stages:
   - deploy
 
 variables:
-  DEPLOY_PATH: "/home/messam/to-do-app"
-  DEPLOY_SERVER: "messam@172.28.5.10"
+  DEPLOY_SERVER: "ubuntu@13.53.200.88"
+  DEPLOY_PATH: "/home/ubuntu/todo-app"
   IMAGE_NAME_BACKEND: "ghcr.io/arham1716/todo-backend"
   IMAGE_NAME_FRONTEND: "ghcr.io/arham1716/todo-frontend"
 
@@ -38,12 +38,26 @@ deploy:
   stage: deploy
   tags:
     - self-hosted
+
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 13.53.200.88 >> ~/.ssh/known_hosts
+
   script:
-    - scp -o StrictHostKeyChecking=no docker-compose.yml $DEPLOY_SERVER:$DEPLOY_PATH
-    - scp -o StrictHostKeyChecking=no nginx.conf $DEPLOY_SERVER:$DEPLOY_PATH
+    # Create folder if not exists
+    - ssh ubuntu@13.53.200.88 "mkdir -p ~/todo-app"
+
+    # Copy files
+    - scp docker-compose.yml ubuntu@13.53.200.88:~/todo-app/
+    - scp nginx.conf ubuntu@13.53.200.88:~/todo-app/
+
+    # Deploy
     - |
-      ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 $DEPLOY_SERVER "
-      cd $DEPLOY_PATH &&
+      ssh ubuntu@13.53.200.88 "
+      cd ~/todo-app &&
       docker compose pull &&
       docker compose up -d --remove-orphans
       "
