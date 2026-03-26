@@ -41,11 +41,7 @@ deploy:
 
   before_script:
     - mkdir -p ~/.ssh
-    - printf "%s" "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-    - echo "----- DEBUG KEY START -----"
-    - head -5 ~/.ssh/id_rsa
-    - echo "----- DEBUG KEY END -----"
-    - wc -l ~/.ssh/id_rsa
+    - echo "$SSH_PRIVATE_KEY_BASE64" | base64 -d > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H 13.53.200.88 >> ~/.ssh/known_hosts
 
