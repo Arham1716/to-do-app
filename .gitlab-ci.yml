@@ -41,15 +41,7 @@ deploy:
 
   before_script:
     - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_BASE64" | base64 -d > ~/.ssh/id_rsa
-    - echo "==== FILE TYPE ===="
-    - file ~/.ssh/id_rsa
-    - echo "==== FIRST LINES ===="
-    - head -5 ~/.ssh/id_rsa
-    - echo "==== LAST LINES ===="
-    - tail -5 ~/.ssh/id_rsa
-    - echo "==== LINE COUNT ===="
-    - wc -l ~/.ssh/id_rsa
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H 13.53.200.88 >> ~/.ssh/known_hosts
 
