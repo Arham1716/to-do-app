@@ -55,11 +55,10 @@ jobs:
 
       # Step 5: Deploy to AWS EC2
       - name: Deploy to EC2
-        run: |
-          # SSH into the EC2 instance and deploy
-          ssh -i ~/.ssh/id_rsa ubuntu@13.48.26.43 "
-            cd ~/todo-app &&
-            docker-compose down --remove-orphans &&
-            docker-compose pull &&
-            docker-compose up -d --remove-orphans
-          "
+        ssh -i ~/.ssh/id_rsa ubuntu@13.48.26.43 "
+        cd ~/todo-app &&
+        docker-compose down --remove-orphans || true &&
+        docker rm -f todo-db || true &&
+        docker-compose pull &&
+        docker-compose up -d --remove-orphans
+      "
