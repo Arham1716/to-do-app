@@ -1,22 +1,64 @@
-name: CI/CD Pipeline
+name: Build and Deploy
 
+# Trigger on push to main branch or pull requests to main
 on:
   push:
     branches:
       - main
-      - master
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
-    runs-on: self-hosted
-
+  build-and-deploy:
+    runs-on: self-hosted # Uses your self-hosted runner
     steps:
+      # Step 0: Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Deploy application
+      # Step 1: Log in to GitHub Container Registry
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      # Step 2: Build & push backend Docker image
+      - name: Build and Push Backend
         run: |
-          cd /home/abdullah/to-do-app
-          docker compose down
-          docker compose build
-          docker compose up -d --remove-orphans
+          IMAGE_NAME_BACKEND="ghcr.io/arham1716/todo-backend"
+          docker build -t $IMAGE_NAME_BACKEND:${GITHUB_SHA} ./backend
+          docker tag $IMAGE_NAME_BACKEND:${GITHUB_SHA} $IMAGE_NAME_BACKEND:latest
+          docker push $IMAGE_NAME_BACKEND:${GITHUB_SHA}
+          docker push $IMAGE_NAME_BACKEND:latest
+
+      # Step 3: Build & push frontend Docker image
+      - name: Build and Push Frontend
+        run: |
+          IMAGE_NAME_FRONTEND="ghcr.io/arham1716/todo-frontend"
+          docker build -t $IMAGE_NAME_FRONTEND:${GITHUB_SHA} ./frontend
+          docker tag $IMAGE_NAME_FRONTEND:${GITHUB_SHA} $IMAGE_NAME_FRONTEND:latest
+          docker push $IMAGE_NAME_FRONTEND:${GITHUB_SHA}
+          docker push $IMAGE_NAME_FRONTEND:latest
+
+      # Step 4: Set up SSH for deployment
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          cat << 'EOF' > ~/.ssh/id_rsa
+          ${{ secrets.EC2_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 13.48.26.43 >> ~/.ssh/known_hosts
+
+      # Step 5: Deploy to AWS EC2
+      - name: Deploy to EC2
+        ssh -i ~/.ssh/id_rsa ubuntu@13.48.26.43 "
+        cd ~/todo-app &&
+        docker-compose down --remove-orphans || true &&
+        docker rm -f todo-db || true &&
+        docker-compose pull &&
+        docker-compose up -d --remove-orphans
+      "
