@@ -58,8 +58,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa ubuntu@13.48.26.43 "
             cd ~/todo-app &&
-            docker-compose down --remove-orphans || true &&
-            docker rm -f todo-db || true &&
+            # Stop and remove all containers defined in docker-compose
+            docker-compose down --remove-orphans --volumes || true &&
+            # Ensure no leftover containers block the names
+            docker rm -f todo-backend todo-frontend todo-db nginx || true &&
+            # Pull new images
             docker-compose pull &&
+            # Start fresh
             docker-compose up -d --remove-orphans
           "
