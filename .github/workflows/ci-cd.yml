@@ -59,6 +59,7 @@ jobs:
           ssh ubuntu@13.48.26.43 "
           mkdir -p ~/todo-app &&
           cd ~/todo-app &&
+          docker-compose down --remove-orphans &&
           cat > docker-compose.yml <<'EOF'
           $(cat docker-compose.yml)
           EOF
