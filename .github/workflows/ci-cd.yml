@@ -65,6 +65,6 @@ jobs:
           cat > nginx.conf <<'EOF'
           $(cat nginx.conf)
           EOF
-          docker compose pull &&
-          docker compose up -d --remove-orphans
+          docker-compose pull &&
+          docker-compose up -d --remove-orphans
           "
