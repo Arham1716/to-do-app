@@ -56,16 +56,10 @@ jobs:
       # Step 5: Deploy to AWS EC2
       - name: Deploy to EC2
         run: |
-          ssh ubuntu@13.48.26.43 "
-          mkdir -p ~/todo-app &&
-          cd ~/todo-app &&
-          docker-compose down --remove-orphans &&
-          cat > docker-compose.yml <<'EOF'
-          $(cat docker-compose.yml)
-          EOF
-          cat > nginx.conf <<'EOF'
-          $(cat nginx.conf)
-          EOF
-          docker-compose pull &&
-          docker-compose up -d --remove-orphans
+          # SSH into the EC2 instance and deploy
+          ssh -i ~/.ssh/id_rsa ubuntu@13.48.26.43 "
+            cd ~/todo-app &&
+            docker-compose down --remove-orphans &&
+            docker-compose pull &&
+            docker-compose up -d --remove-orphans
           "
